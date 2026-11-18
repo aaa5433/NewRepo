@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#FAFAF7">
+  <title>좋은습관</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-icon">✎</div>
+      <h1>좋은습관</h1>
+    </div>
+    <button class="icon-button notification" aria-label="알림">
+      ♧
+      <span class="notification-dot">2</span>
+    </button>
+  </header>
+
+  <!-- Memo Input -->
+  <section class="memo-input">
+    <input id="memoInput" type="text" placeholder="퀵메모 추가">
+    <button id="addMemo" aria-label="메모 추가">＋</button>
+    <button class="mic-button" aria-label="음성 입력">♩</button>
+  </section>
+
+  <!-- Weekly -->
+  <section class="section weekly-section" id="weekly">
+    <div class="section-heading">
+      <h2>Weekly <span class="arrow">›</span></h2>
+      <div class="week-controls">
+        <button id="prevWeek" class="round-button">‹</button>
+        <button id="currentWeek" class="week-select">이번 주⌄</button>
+        <button id="nextWeek" class="round-button">›</button>
+      </div>
+    </div>
+
+    <div class="calendar-card">
+      <div class="calendar" id="calendar"></div>
+      <div class="calendar-events" id="calendarEvents"></div>
+    </div>
+  </section>
+
+  <!-- Quick Memo -->
+  <section class="section quick-section">
+    <div class="section-heading">
+      <h2>퀵메모 <span class="arrow">›</span></h2>
+    </div>
+    <div class="memo-list" id="memoList"></div>
+  </section>
+
+  <!-- Daily Habit -->
+  <section class="section habit-section" id="daily">
+    <div class="section-heading">
+      <h2>데일리습관 <span class="arrow">›</span></h2>
+      <span class="progress-count" id="progressCount">2 / 4</span>
+    </div>
+
+    <div class="habit-card">
+      <div class="habit-list" id="habitList"></div>
+      <button class="add-habit" id="addHabit" aria-label="습관 추가"></button>
+    </div>
+  </section>
+
+  <!-- Upcoming Schedule -->
+  <!-- <section class="section schedule-section">
+    <div class="section-heading">
+      <h2>가까운 일정 <span class="arrow">›</span></h2>
+    </div>
+    <div class="schedule-item">
+      <div class="schedule-date">
+        <strong>11.18</strong>
+        <span>수요일</span>
+      </div>
+      <div class="schedule-info">
+        <strong>프로젝트 디자인 검토</strong>
+        <span>오후 2:00 · 학교</span>
+      </div>
+    </div>
+  </section> -->
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="home">
+      <span class="nav-icon">⌂</span>
+      <span>홈</span>
+    </button>
+    <button class="nav-item" data-page="weekly">
+      <span class="nav-icon">▣</span>
+      <span>Weekly</span>
+    </button>
+    <button class="nav-item" data-page="daily">
+      <span class="nav-icon">♧</span>
+      <span>데일리</span>
+    </button>
+    <button class="nav-item" data-page="settings">
+      <span class="nav-icon">⚙</span>
+      <span>설정</span>
+    </button>
+  </nav>
+
+</div>
+
+<!-- Memo Detail Popup -->
+<div class="modal-overlay" id="memoModal">
+  <div class="memo-modal">
+    <button class="modal-close" id="closeModal">×</button>
+
+    <div class="modal-label">QUICK MEMO</div>
+
+    <textarea id="modalText" placeholder="메모 내용"></textarea>
+
+    <div class="modal-bottom">
+      <span class="memo-date" id="modalDate">26.11.18 수</span>
+      <label class="todo-label">
+        <input type="checkbox" id="todoCheck">
+        <span>Todo</span>
+      </label>
+    </div>
+
+    <div class="audio-player">
+      <button id="playAudio">▶</button>
+      <div class="audio-track">
+        <div class="audio-progress" id="audioProgress"></div>
+      </div>
+      <span>음성 메모</span>
+    </div>
+
+    <button class="save-memo" id="saveMemo">저장</button>
+    <button class="delete-memo" id="deleteMemo">메모 삭제</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
