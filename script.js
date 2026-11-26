@@ -3,28 +3,50 @@ const $ = (selector) => document.querySelector(selector);
 
 // 초기 데이터
 let memos = [
+  { id: 5, text: "28일 Python 시험 · 오전 7시", date: "26.11.26", todo: false },
   { id: 1, text: "냉동실에 닭가슴살 버리기", date: "26.11.18", todo: false },
-  { id: 2, text: "재환 -20,000\n은정 +30,000", date: "26.11.18", todo: false },
-  { id: 3, text: "이마트\n샐러리\n굴\n감자\n카누\n김자반\n계란", date: "26.11.18", todo: false },
-  { id: 4, text: "인류의 활동이\n지구환경을\n좌지우지하는\n새로운 지질시대인\n인류세로\n들어서고 있다는 주장", date: "26.11.18", todo: false }
+  { id: 2, text: "재환 -20,000 은정 +30,000", date: "26.11.18", todo: false },
+  { id: 3, text: "이마트 샐러리 귤 감자 카누 김자반 계란", date: "26.11.18", todo: false },
+  { id: 4, text: "대한민국은 민주공화국이다. 대한민국의 주권은 국민에게 있고 모든 권력은 국민으로부터 나온다. 대한민국의 국민되는 요건은 법률로써정한다.대한민국의 영토는 한반도와 그 부속도서로 한", date: "26.11.18", todo: false }
 ];
 
 let habits = [
   { text: "점심 먹고 30분 산책", done: true },
-  { text: "하루 5,000원 이하로 쓰기", done: true },
+  { text: "하루 5,000-10,000 사이로 쓰기", done: true },
   { text: "하루 책 20장 읽기", done: false },
   { text: "앉았다 일어났다, 복근, 팔굽혀펴기 100회씩", done: false }
 ];
 
 const events = [
-  { day: 3, text: "종표 휴강 ♥", color: "pink" },
-  { day: 4, text: "지수랑 점심 약속", color: "pink" },
-  { day: 4, text: "현혈하는 날", color: "blue" },
-  { day: 5, text: "강의실책상 원목나라 854-6688 에재고알아보고연락 ...", color: "green" }
+  { date: "2026-11-25", text: "종프 휴강 ♥", time: "", color: "pink" },
+  { date: "2026-11-26", text: "지수랑 점심 약속", time: "", color: "pink" },
+  { date: "2026-11-26", text: "현혈하는 날", time: "", color: "blue" },
+  { date: "2026-11-27", text: "강의실책상 원목나라 854-6688 에재고알아보고연락", time: "", color: "green" },
+  { date: "2026-11-28", text: "Python 시험", time: "오전 7:00", color: "pink" }
 ];
 
 let selectedMemo = null;
 let weekOffset = 0;
+const today = new Date();
+let displayedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+let selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+function dateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getWeekStart(date) {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  start.setDate(start.getDate() - start.getDay());
+  return start;
+}
+
+function sameDate(first, second) {
+  return dateKey(first) === dateKey(second);
+}
 
 // 퀵메모 렌더링
 function renderMemos() {
@@ -34,7 +56,10 @@ function renderMemos() {
   memos.slice(0, 4).forEach(memo => {
     const card = document.createElement("div");
     card.className = "memo-card";
-    card.textContent = memo.text;
+    const text = document.createElement("span");
+    text.className = "memo-text";
+    text.textContent = memo.text;
+    card.appendChild(text);
     card.addEventListener("click", () => openMemo(memo.id));
     list.appendChild(card);
   });
@@ -70,10 +95,34 @@ function addMemo() {
   renderMemos();
 }
 
-$("#addMemo").addEventListener("click", addMemo);
+$("#addMemo").addEventListener("click", () => {
+  if (window.location.hash === "#daily") {
+    addHabitFromInput();
+  } else {
+    addMemo();
+  }
+});
 
 $("#memoInput").addEventListener("keydown", e => {
-  if (e.key === "Enter") addMemo();
+  if (e.key !== "Enter") return;
+  if (window.location.hash === "#daily") {
+    addHabitFromInput();
+  } else {
+    addMemo();
+  }
+});
+
+$("#memoInput").addEventListener("focus", () => {
+  if (window.location.hash === "#weekly") {
+    $("#memoInput").placeholder = "카드값 내는 날";
+  } else if (window.location.hash === "#daily") {
+    $("#memoInput").placeholder = "아침 일어나서 물 한 잔 마시기";
+  }
+});
+
+$("#memoInput").addEventListener("blur", () => {
+  if ($("#memoInput").value) return;
+  setInputPrompt(window.location.hash.slice(1));
 });
 
 // 메모 상세 팝업
@@ -131,41 +180,64 @@ $("#playAudio").addEventListener("click", () => {
 
 // 데일리습관 렌더링
 function renderHabits() {
-  const list = $("#habitList");
-  list.innerHTML = "";
+  [
+    { list: $("#habitList"), count: $("#progressCount") },
+    { list: $("#dailyHabitList"), count: $("#dailyProgressCount") }
+  ].forEach(({ list, count }) => {
+    if (!list || !count) return;
+    list.innerHTML = "";
 
-  habits.slice(0, 4).forEach((habit, index) => {
-    const item = document.createElement("label");
-    item.className = `habit-item ${habit.done ? "done" : ""}`;
+    const visibleHabits = list.id === "habitList" ? habits.slice(0, 4) : habits;
+    visibleHabits.forEach((habit, index) => {
+      const item = document.createElement("label");
+      item.className = `habit-item ${habit.done ? "done" : ""}`;
 
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = habit.done;
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = habit.done;
+      checkbox.addEventListener("change", () => {
+        habits[index].done = checkbox.checked;
+        renderHabits();
+      });
 
-    checkbox.addEventListener("change", () => {
-      habits[index].done = checkbox.checked;
-      renderHabits();
+      const text = document.createElement("span");
+      text.textContent = habit.text;
+      item.append(checkbox, text);
+      list.appendChild(item);
     });
 
-    const text = document.createElement("span");
-    text.textContent = habit.text;
-
-    item.append(checkbox, text);
-    list.appendChild(item);
+    const completed = habits.filter(habit => habit.done).length;
+    count.textContent = `${completed} / ${habits.length}`;
   });
-
-  const completed = habits.filter(h => h.done).length;
-  $("#progressCount").textContent = `${completed} / ${habits.length}`;
 }
 
 // 습관 추가
-$("#addHabit").addEventListener("click", () => {
-  const text = prompt("새로운 습관을 입력하세요.");
-
-  if (!text || !text.trim()) return;
-
-  habits.push({ text: text.trim(), done: false });
+function addHabit(text) {
+  const habitText = text.trim();
+  if (!habitText) return;
+  habits.unshift({ text: habitText, done: false });
   renderHabits();
+}
+
+function addHabitFromInput() {
+  const input = $("#memoInput");
+  if (!input.value.trim()) {
+    input.focus();
+    return;
+  }
+  addHabit(input.value);
+  input.value = "";
+  input.placeholder = "습관 추가";
+}
+
+document.querySelectorAll(".add-habit").forEach(button => {
+  button.addEventListener("click", () => {
+    const text = prompt("새로운 습관을 입력하세요.");
+
+    if (!text || !text.trim()) return;
+
+    addHabit(text);
+  });
 });
 
 // Weekly 달력
@@ -178,13 +250,8 @@ function renderCalendar() {
   calendar.innerHTML = "";
   eventArea.innerHTML = "";
 
-  const today = new Date();
-  const base = new Date(today);
-  base.setDate(today.getDate() - today.getDay() + weekOffset * 7);
-
-  const firstDay = new Date(base);
-  const lastDay = new Date(base);
-  lastDay.setDate(base.getDate() + 6);
+  const base = getWeekStart(today);
+  base.setDate(base.getDate() + weekOffset * 7);
 
   for (let i = 0; i < 7; i++) {
     const date = new Date(base);
@@ -196,9 +263,7 @@ function renderCalendar() {
     if (i === 0) day.classList.add("sunday");
     if (i === 6) day.classList.add("saturday");
 
-    if (
-      date.toDateString() === today.toDateString()
-    ) {
+    if (sameDate(date, today)) {
       day.classList.add("today");
     }
 
@@ -212,7 +277,7 @@ function renderCalendar() {
     const column = document.createElement("div");
     column.className = "event-column";
 
-    events.filter(event => event.day === i).forEach(event => {
+    events.filter(event => event.date === dateKey(date)).forEach(event => {
       const chip = document.createElement("div");
       chip.className = `event-chip ${event.color}`;
       chip.textContent = event.text;
@@ -223,51 +288,208 @@ function renderCalendar() {
   }
 
   $("#currentWeek").textContent =
-    weekOffset === 0 ? "이번 주⌄" :
-    weekOffset === -1 ? "지난 주⌄" :
-    weekOffset === 1 ? "다음 주⌄" : "주간⌄";
+    weekOffset === 0 ? "이번 주" : "다음 주";
 }
 
+function renderMonthCalendar() {
+  const calendar = $("#monthCalendar");
+  const monthLabel = $("#monthLabel");
+  calendar.innerHTML = "";
+
+  monthLabel.textContent = `${displayedMonth.getFullYear()}년 ${displayedMonth.getMonth() + 1}월`;
+
+  const firstOfMonth = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth(), 1);
+  const lastOfMonth = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() + 1, 0);
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
+  const visibleDayCount = Math.ceil((firstOfMonth.getDay() + lastOfMonth.getDate()) / 7) * 7;
+
+  for (let index = 0; index < visibleDayCount; index++) {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + index);
+    const key = dateKey(date);
+    const dayEvents = events.filter(event => event.date === key);
+    const dayButton = document.createElement("button");
+    dayButton.type = "button";
+    dayButton.className = "month-day";
+    dayButton.setAttribute("aria-label", `${date.getMonth() + 1}월 ${date.getDate()}일${dayEvents.length ? `, 일정 ${dayEvents.length}개` : ""}`);
+
+    if (date.getMonth() !== displayedMonth.getMonth()) dayButton.classList.add("outside-month");
+    if (sameDate(date, today)) dayButton.classList.add("today");
+    if (sameDate(date, selectedDate)) dayButton.classList.add("selected");
+    if (date.getDay() === 0) dayButton.classList.add("sunday");
+    if (date.getDay() === 6) dayButton.classList.add("saturday");
+
+    const number = document.createElement("span");
+    number.className = "month-day-number";
+    number.textContent = date.getDate();
+    dayButton.appendChild(number);
+
+    if (dayEvents.length) {
+      const dot = document.createElement("span");
+      dot.className = "month-event-dot";
+      dot.setAttribute("aria-hidden", "true");
+      dayButton.appendChild(dot);
+    }
+
+    dayButton.addEventListener("click", () => {
+      selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      displayedMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+      renderMonthCalendar();
+      renderWeeklySchedule();
+    });
+
+    calendar.appendChild(dayButton);
+  }
+}
+
+function renderWeeklySchedule() {
+  const list = $("#weeklyScheduleList");
+  const weekStart = getWeekStart(selectedDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const weekEvents = events
+    .filter(event => {
+      const date = new Date(`${event.date}T00:00:00`);
+      return date >= weekStart && date <= weekEnd;
+    })
+    .sort((first, second) => first.date.localeCompare(second.date) || first.time.localeCompare(second.time));
+
+  list.innerHTML = "";
+
+  if (!weekEvents.length) {
+    const empty = document.createElement("p");
+    empty.className = "schedule-empty";
+    empty.textContent = "등록된 일정이 없습니다";
+    list.appendChild(empty);
+    return;
+  }
+
+  weekEvents.forEach(event => {
+    const [year, month, day] = event.date.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    const item = document.createElement("article");
+    item.className = "schedule-item";
+    if (event.date < dateKey(today)) item.classList.add("past");
+
+    const dateInfo = document.createElement("div");
+    dateInfo.className = "schedule-date";
+    const dateNumber = document.createElement("strong");
+    dateNumber.textContent = `${month}.${String(day).padStart(2, "0")}`;
+    const weekday = document.createElement("span");
+    weekday.textContent = `${dayNames[date.getDay()]}요일`;
+    dateInfo.append(dateNumber, weekday);
+
+    const eventInfo = document.createElement("div");
+    eventInfo.className = "schedule-info";
+    const title = document.createElement("strong");
+    title.textContent = event.text;
+    eventInfo.appendChild(title);
+    if (event.time) {
+      const time = document.createElement("span");
+      time.textContent = event.time;
+      eventInfo.appendChild(time);
+    }
+
+    item.append(dateInfo, eventInfo);
+    list.appendChild(item);
+  });
+}
+
+$("#prevMonth").addEventListener("click", () => {
+  displayedMonth = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() - 1, 1);
+  selectedDate = new Date(displayedMonth);
+  renderMonthCalendar();
+  renderWeeklySchedule();
+});
+
+$("#nextMonth").addEventListener("click", () => {
+  displayedMonth = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() + 1, 1);
+  selectedDate = new Date(displayedMonth);
+  renderMonthCalendar();
+  renderWeeklySchedule();
+});
+
+$("#goToToday").addEventListener("click", () => {
+  displayedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  renderMonthCalendar();
+  renderWeeklySchedule();
+});
+
 $("#prevWeek").addEventListener("click", () => {
-  weekOffset--;
-  renderCalendar();
-});
-
-$("#nextWeek").addEventListener("click", () => {
-  weekOffset++;
-  renderCalendar();
-});
-
-$("#currentWeek").addEventListener("click", () => {
   weekOffset = 0;
   renderCalendar();
 });
 
-// 하단 메뉴
-document.querySelectorAll(".nav-item").forEach(item => {
-  item.addEventListener("click", () => {
-    document.querySelectorAll(".nav-item")
-      .forEach(nav => nav.classList.remove("active"));
+$("#nextWeek").addEventListener("click", () => {
+  weekOffset = 1;
+  renderCalendar();
+});
 
-    item.classList.add("active");
+$("#currentWeek").addEventListener("click", () => {
+  weekOffset = weekOffset === 0 ? 1 : 0;
+  renderCalendar();
+});
 
-    const page = item.dataset.page;
+// 해시 링크로 화면 전환
+const pageIds = new Set(
+  [...document.querySelectorAll(".page-panel")].map(panel => panel.dataset.page)
+);
 
-    if (page === "weekly") {
-      $("#weekly").scrollIntoView({ behavior: "smooth" });
-    } else if (page === "daily") {
-      $("#daily").scrollIntoView({ behavior: "smooth" });
-    } else if (page === "home") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (page === "settings") {
-      alert("설정 화면은 준비 중입니다.");
+function showPage() {
+  const requestedPage = window.location.hash.slice(1);
+  const currentPage = pageIds.has(requestedPage) ? requestedPage : "home";
+  setInputPrompt(currentPage);
+  $("#addMemo").setAttribute(
+    "aria-label",
+    currentPage === "daily" ? "습관 추가" : currentPage === "weekly" ? "일정 추가" : "메모 추가"
+  );
+
+  document.querySelectorAll(".page-panel").forEach(panel => {
+    const isActive = panel.dataset.page === currentPage;
+    panel.classList.toggle("active", isActive);
+    panel.setAttribute("aria-hidden", String(!isActive));
+  });
+
+  document.querySelectorAll(".nav-item").forEach(item => {
+    const isActive = item.getAttribute("href") === `#${currentPage}`;
+    item.classList.toggle("active", isActive);
+    if (isActive) {
+      item.setAttribute("aria-current", "page");
+    } else {
+      item.removeAttribute("aria-current");
     }
   });
+
+  window.scrollTo(0, 0);
+}
+
+function setInputPrompt(page) {
+  const prompts = {
+    home: "퀵메모 입력",
+    weekly: "일정 추가하기",
+    daily: "습관 추가",
+    settings: "퀵메모 입력"
+  };
+  $("#memoInput").placeholder = prompts[page] || prompts.home;
+}
+
+document.querySelectorAll(".nav-item").forEach(item => {
+  item.addEventListener("click", event => {
+    event.preventDefault();
+    window.history.pushState({}, "", item.getAttribute("href"));
+    showPage();
+  });
 });
+
+window.addEventListener("hashchange", showPage);
+window.addEventListener("popstate", showPage);
+showPage();
 
 // 초기 실행
 renderMemos();
 renderHabits();
 renderCalendar();
-
-
+renderMonthCalendar();
+renderWeeklySchedule();

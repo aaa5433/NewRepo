@@ -36,17 +36,24 @@ button {
   max-width: 600px;
   min-height: 100dvh;
   margin: auto;
-  padding: 15px 15px 85px;
+  padding: 15px 15px 170px;
   background: var(--bg);
+}
+
+.page-panel {
+  display: none;
+}
+
+.page-panel.active {
+  display: block;
 }
 
 /* Header */
 
 .header {
   display: flex;
-  justify-content: space-between;
+  justify-content: end;
   align-items: center;
-  margin: 10px 0 10px;
 }
 
 .brand {
@@ -100,9 +107,11 @@ button {
   border-radius: 40px;
   display: flex;
   align-items: center;
-  padding: 0 17px 0 27px;
+  padding: 0 5px 0 20px;
   box-shadow: var(--shadow);
-  margin-bottom: 7px;
+  margin-bottom: 0;
+  width: 89%;
+  justify-self: center;
 }
 
 .memo-input input {
@@ -126,7 +135,6 @@ button {
 }
 
 .memo-input .mic-button {
-  margin-left: 8px;
   font-size: 24px;
 }
 
@@ -170,20 +178,20 @@ button {
 }
 
 .week-select {
-  border: 1px solid #E7BDB0;
+  /* border: 1px solid #b9b9b9; */
   border-radius: 30px;
-  background: #FBE1D8;
-  padding: 7px 12px;
+  /* background: #FBE1D8; */
+  padding: 1px 5px;
   font-size: 12px;
 }
 
 /* Weekly Calendar */
 
 .calendar-card {
-  background: white;
+  background: #ffffff;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: var(--shadow);
+  /* box-shadow: var(--shadow); */
   /* min-height: 190px; */
   /* padding-bottom: 12px; */
 }
@@ -268,11 +276,12 @@ button {
 
 .memo-list {
   display: flex;
-  gap: 12px;
+  gap: 5px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   padding: 3px 2px 10px;
   scrollbar-width: none;
+  max-height: 150px;
 }
 
 .memo-list::-webkit-scrollbar {
@@ -281,7 +290,7 @@ button {
 
 .memo-card {
   flex: 0 0 138px;
-  min-height: 150px;
+  min-height: 140px;
   background: white;
   border-radius: 20px;
   box-shadow: var(--shadow);
@@ -293,6 +302,14 @@ button {
   line-height: 1.5;
   overflow: hidden;
   position: relative;
+}
+
+.memo-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  white-space: pre-line;
 }
 
 .memo-card:active {
@@ -309,6 +326,7 @@ button {
 
 .memo-card.add-card {
   display: grid;
+  /* width: 100px; */
   place-items: center;
   color: #B7B7B7;
   font-size: 30px;
@@ -320,6 +338,7 @@ button {
 /* Daily Habit */
 
 .habit-section {
+  
 }
 
 .progress-count {
@@ -349,7 +368,7 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 42px;
+  min-height: 40px;
   border-bottom: 1px solid #DAD8D1;
 }
 
@@ -445,19 +464,27 @@ button {
   transform: translateX(-50%);
   width: 100%;
   max-width: 600px;
-  height: 83px;
-  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(150px + env(safe-area-inset-bottom));
+  padding: 15px 20px calc(8px + env(safe-area-inset-bottom));
   background: rgba(255,255,255,.96);
   border-top: 1px solid #ECEBE8;
-  display: flex;
-  justify-content: space-around;
+  display: grid;
+  grid-template-rows: 45px 1fr;
+  gap: 4px;
+}
+
+.nav-items {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
 }
 
 .nav-item {
   background: transparent;
   color: #9DA3B0;
-  min-width: 58px;
+  text-decoration: none;
+  min-width: 0;
+  width: 100%;
   height: 65px;
   display: flex;
   flex-direction: column;
@@ -465,6 +492,150 @@ button {
   justify-content: center;
   gap: 2px;
   font-size: 11px;
+}
+
+.weekly-page {
+  padding-bottom: 110px;
+}
+
+.weekly-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  color: var(--sub);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+}
+
+.weekly-back {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+
+.weekly-detail-section {
+  margin-top: 12px;
+}
+
+.weekly-detail-page {
+}
+
+.month-nav-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 20px;
+}
+
+.month-weekdays,
+.month-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.month-weekdays {
+  padding: 15px 4px 15px;
+  color: var(--sub);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  border-bottom: 1px solid #F0EFEC;
+}
+
+.month-weekdays .sunday,
+.month-day.sunday {
+  color: #E75D65;
+}
+
+.month-weekdays .saturday,
+.month-day.saturday {
+  color: #4788C9;
+}
+
+.month-day {
+  min-width: 0;
+  height: 48px;
+  padding: 4px 0;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+}
+
+.month-day-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+}
+
+.month-day.today .month-day-number {
+  background: #e95052;
+  color: white;
+}
+
+.month-day.selected:not(.today) .month-day-number {
+  outline: 1px solid var(--coral);
+}
+
+.month-day.outside-month {
+  color: #C9C8C5;
+}
+
+.month-event-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #EF7375;
+}
+
+.schedule-empty {
+  margin: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: white;
+  color: var(--sub);
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.weekly-agenda .schedule-item {
+  margin-bottom: 8px;
+}
+
+.weekly-agenda .schedule-item.past {
+  background: #FAFAF7;
+  color: #A5A5A5;
+  box-shadow: none;
+}
+
+.weekly-agenda .schedule-item.past .schedule-date span,
+.weekly-agenda .schedule-item.past .schedule-info span {
+  color: #BDBDBD;
+}
+
+.weekly-add-button {
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: var(--coral-light);
+  color: var(--coral);
+  font-size: 12px;
+}
+
+.weekly-bottom-nav {
+  height: calc(86px + env(safe-area-inset-bottom));
+  padding: 4px 16px calc(4px + env(safe-area-inset-bottom));
+  grid-template-rows: 1fr;
 }
 
 .nav-icon {
@@ -475,6 +646,12 @@ button {
 .nav-item.active {
   color: #E45D4F;
   font-weight: 700;
+}
+
+.weekly-link {
+  color: #9DA3B0;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 /* Memo Modal */
