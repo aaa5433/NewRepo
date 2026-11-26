@@ -124,6 +124,28 @@
         <button class="add-habit" type="button" aria-label="습관 추가"></button>
       </div>
     </section>
+
+    <section class="daily-mission-card" aria-labelledby="dailyMissionTitle">
+      <h2 id="dailyMissionTitle">Daily mission</h2>
+      <div class="mission-progress-grid" id="missionProgressGrid" aria-label="최근 35일 습관 달성 현황"></div>
+      <div class="mission-rewards" aria-label="오늘의 보상">
+        <span class="mission-medal" data-reward="1" aria-label="1단계">
+          <img src="img/medal-grey.png" data-earned-src="img/bronze.png" alt="">
+        </span>
+        <span class="mission-medal" data-reward="2" aria-label="2단계">
+          <img src="img/medal-grey.png" data-earned-src="img/silver.png" alt="">
+        </span>
+        <span class="mission-medal" data-reward="3" aria-label="3단계">
+          <img src="img/medal-grey.png" data-earned-src="img/gold.png" alt="">
+        </span>
+        <span class="mission-medal" data-reward="4" aria-label="4단계">
+          <img src="img/diamond-grey.png" data-earned-src="img/diamond.png" alt="">
+        </span>
+        <span class="mission-trophy" aria-label="오늘의 미션 완료">
+          <img src="img/trophy-grey.png" data-earned-src="img/trophy.png" alt="">
+        </span>
+      </div>
+    </section>
   </main>
 
   <main class="page-panel" data-page="settings">
@@ -136,7 +158,7 @@
   </main>
 
   <!-- Bottom Navigation -->
-  <nav class="bottom-nav">
+  <nav class="bottom-nav" data-page="home">
     <section class="memo-input">
       <input id="memoInput" type="text" placeholder="퀵메모 입력" maxlength="100">
       <button id="addMemo" aria-label="메모 추가">＋</button>

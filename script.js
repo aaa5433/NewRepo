@@ -30,6 +30,30 @@ let weekOffset = 0;
 const today = new Date();
 let displayedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 let selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+const missionHistoryKey = "good-habits-mission-history";
+
+function loadMissionHistory() {
+  try {
+    const savedHistory = localStorage.getItem(missionHistoryKey);
+    if (!savedHistory) return {};
+
+    const parsedHistory = JSON.parse(savedHistory);
+    if (!parsedHistory || typeof parsedHistory !== "object" || Array.isArray(parsedHistory)) {
+      throw new TypeError("Saved mission progress must be an object.");
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsedHistory).filter(([date, count]) =>
+        /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isInteger(count) && count >= 0
+      )
+    );
+  } catch (error) {
+    console.error("Could not load daily mission progress.", error);
+    return {};
+  }
+}
+
+let missionHistory = loadMissionHistory();
 
 function dateKey(date) {
   const year = date.getFullYear();
@@ -48,12 +72,29 @@ function sameDate(first, second) {
   return dateKey(first) === dateKey(second);
 }
 
+function completedHabitCount() {
+  return habits.filter(habit => habit.done).length;
+}
+
+function saveTodayMissionProgress() {
+  missionHistory[dateKey(today)] = completedHabitCount();
+  try {
+    localStorage.setItem(missionHistoryKey, JSON.stringify(missionHistory));
+  } catch (error) {
+    console.error("Could not save daily mission progress.", error);
+  }
+}
+
+if (!Object.hasOwn(missionHistory, dateKey(today))) {
+  saveTodayMissionProgress();
+}
+
 // 퀵메모 렌더링
 function renderMemos() {
   const list = $("#memoList");
   list.innerHTML = "";
 
-  memos.slice(0, 4).forEach(memo => {
+  memos.forEach(memo => {
     const card = document.createElement("div");
     card.className = "memo-card";
     const text = document.createElement("span");
@@ -95,35 +136,40 @@ function addMemo() {
   renderMemos();
 }
 
-$("#addMemo").addEventListener("click", () => {
-  if (window.location.hash === "#daily") {
-    addHabitFromInput();
-  } else {
-    addMemo();
-  }
-});
+$("#addMemo").addEventListener("click", addCurrentPageItem);
 
 $("#memoInput").addEventListener("keydown", e => {
   if (e.key !== "Enter") return;
-  if (window.location.hash === "#daily") {
-    addHabitFromInput();
-  } else {
-    addMemo();
-  }
+  addCurrentPageItem();
 });
 
 $("#memoInput").addEventListener("focus", () => {
   if (window.location.hash === "#weekly") {
-    $("#memoInput").placeholder = "카드값 내는 날";
+    $("#memoInput").placeholder = "예: 28일 카드값";
   } else if (window.location.hash === "#daily") {
     $("#memoInput").placeholder = "아침 일어나서 물 한 잔 마시기";
   }
+});
+
+$("#memoInput").addEventListener("input", () => {
+  $("#memoInput").setCustomValidity("");
 });
 
 $("#memoInput").addEventListener("blur", () => {
   if ($("#memoInput").value) return;
   setInputPrompt(window.location.hash.slice(1));
 });
+
+function addCurrentPageItem() {
+  const currentPage = window.location.hash.slice(1);
+  if (currentPage === "daily") {
+    addHabitFromInput();
+  } else if (currentPage === "weekly") {
+    addWeeklyEventFromInput();
+  } else {
+    addMemo();
+  }
+}
 
 // 메모 상세 팝업
 function openMemo(id) {
@@ -197,7 +243,9 @@ function renderHabits() {
       checkbox.checked = habit.done;
       checkbox.addEventListener("change", () => {
         habits[index].done = checkbox.checked;
+        saveTodayMissionProgress();
         renderHabits();
+        renderMissionProgress();
       });
 
       const text = document.createElement("span");
@@ -209,6 +257,48 @@ function renderHabits() {
     const completed = habits.filter(habit => habit.done).length;
     count.textContent = `${completed} / ${habits.length}`;
   });
+}
+
+function renderMissionProgress() {
+  const grid = $("#missionProgressGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 34);
+
+  for (let index = 0; index < 35; index++) {
+    const date = new Date(firstDay);
+    date.setDate(firstDay.getDate() + index);
+    const key = dateKey(date);
+    const completionCount = key === dateKey(today)
+      ? completedHabitCount()
+      : missionHistory[key] || 0;
+    const level = Math.min(completionCount, 4);
+    const cell = document.createElement("span");
+    cell.className = `mission-day level-${level}`;
+    cell.setAttribute(
+      "aria-label",
+      `${date.getMonth() + 1}월 ${date.getDate()}일, 습관 ${completionCount}개 완료`
+    );
+    grid.appendChild(cell);
+  }
+
+  document.querySelectorAll(".mission-medal").forEach(medal => {
+    const threshold = Number(medal.dataset.reward);
+    const earned = completedHabitCount() >= threshold;
+    const image = medal.querySelector("img");
+    if (!image.dataset.inactiveSrc) {
+      image.dataset.inactiveSrc = image.getAttribute("src");
+    }
+    medal.classList.toggle("earned", earned);
+    image.src = earned ? image.dataset.earnedSrc : image.dataset.inactiveSrc;
+  });
+  const trophy = $(".mission-trophy");
+  const trophyEarned = completedHabitCount() >= 4;
+  trophy.classList.toggle("earned", trophyEarned);
+  trophy.querySelector("img").src = trophyEarned
+    ? trophy.querySelector("img").dataset.earnedSrc
+    : "img/trophy-grey.png";
 }
 
 // 습관 추가
@@ -396,6 +486,61 @@ function renderWeeklySchedule() {
   });
 }
 
+function addWeeklyEventFromInput() {
+  const input = $("#memoInput");
+  const text = input.value.trim();
+  if (!text) {
+    input.focus();
+    return;
+  }
+
+  const dateMatch = text.match(/(\d{1,2})일/);
+  if (!dateMatch) {
+    input.setCustomValidity("날짜를 포함해 입력해줘. 예: 28일 카드값");
+    input.reportValidity();
+    return;
+  }
+
+  const day = Number(dateMatch[1]);
+  const eventDate = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth(), day);
+  if (eventDate.getMonth() !== displayedMonth.getMonth()) {
+    input.setCustomValidity("선택한 달에 있는 날짜를 입력해줘.");
+    input.reportValidity();
+    return;
+  }
+
+  const timeMatch = text.match(/(오전|오후)\s*(\d{1,2})(?::(\d{2})|시(?:\s*(\d{1,2})분?)?)/);
+  const title = text
+    .replace(dateMatch[0], "")
+    .replace(timeMatch?.[0] || "", "")
+    .replace(/[·,]/g, " ")
+    .trim();
+
+  if (!title) {
+    input.setCustomValidity("일정 이름도 함께 입력해줘.");
+    input.reportValidity();
+    return;
+  }
+
+  const time = timeMatch
+    ? `${timeMatch[1]} ${timeMatch[2]}:${timeMatch[3] || timeMatch[4] || "00"}`
+    : "";
+  events.push({
+    date: dateKey(eventDate),
+    text: title,
+    time,
+    color: "pink"
+  });
+
+  displayedMonth = new Date(eventDate.getFullYear(), eventDate.getMonth(), 1);
+  selectedDate = eventDate;
+  input.value = "";
+  input.setCustomValidity("");
+  renderCalendar();
+  renderMonthCalendar();
+  renderWeeklySchedule();
+}
+
 $("#prevMonth").addEventListener("click", () => {
   displayedMonth = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() - 1, 1);
   selectedDate = new Date(displayedMonth);
@@ -440,6 +585,7 @@ const pageIds = new Set(
 function showPage() {
   const requestedPage = window.location.hash.slice(1);
   const currentPage = pageIds.has(requestedPage) ? requestedPage : "home";
+  $(".bottom-nav").dataset.page = currentPage;
   setInputPrompt(currentPage);
   $("#addMemo").setAttribute(
     "aria-label",
@@ -490,6 +636,7 @@ showPage();
 // 초기 실행
 renderMemos();
 renderHabits();
+renderMissionProgress();
 renderCalendar();
 renderMonthCalendar();
 renderWeeklySchedule();
